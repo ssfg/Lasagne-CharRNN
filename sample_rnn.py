@@ -8,14 +8,14 @@ from nnio import *
 from train_char_rnn import build_network
 from gen_data import gen_data, str2matrix
 import sys
-MAX_LENGTH = 200
+MAX_LENGTH = 70
 LEARNING_RATE = 0.001
 GRAD_CLIP = 100
 N_ITERATIONS = 1000
 N_HIDDEN = 150
 N_FEAT_DIM = 256
 CHECK_FREQUENCY = 50
-SAMPLE_LENGTH = 100
+SAMPLE_LENGTH = 60
 
 
 def main(fname):
@@ -27,7 +27,7 @@ def main(fname):
 
     train_f = open('chatlog.txt','r')
     f_data = train_f.read()
-    startidx = 4700
+    startidx = 5700-33
     seed_str = f_data[startidx:startidx+MAX_LENGTH]
 
     instr = np.zeros((1, MAX_LENGTH, N_FEAT_DIM))

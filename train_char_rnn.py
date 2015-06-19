@@ -6,15 +6,15 @@ from theano import tensor as T
 from gen_data import gen_data, str2matrix
 import lasagne
 from nnio import *
+from lasagne.objectives import categorical_crossentropy
 
-
-N_BATCH = 200
+N_BATCH = 200 
 MAX_LENGTH = 60
 LEARNING_RATE = 0.01
 GRAD_CLIP = 100
 N_ITERATIONS = 1000000
-N_HIDDEN = 1024
-N_FEAT_DIM = 256
+N_HIDDEN = 512
+N_FEAT_DIM = 256 # for 256 ascii characters
 CHECK_FREQUENCY = 50
 CHECKPOINT_FREQUENCY = 1000
 
@@ -30,8 +30,8 @@ def build_network(batch_size, seq_length = MAX_LENGTH):
         l_forward3, (batch_size*seq_length, N_HIDDEN))
     # Our output layer is a simple dense connection, with 1 output unit
     l_recurrent_out = lasagne.layers.DenseLayer(
-        l_reshape, num_units=N_FEAT_DIM, nonlinearity=lasagne.nonlinearities.rectify)
-    l_softmax = lasagne.layers.NonlinearityLayer(l_recurrent_out, nonlinearity=lasagne.nonlinearities.softmax)
+        l_reshape, num_units=N_FEAT_DIM, nonlinearity=lasagne.nonlinearities.softmax)
+#    l_softmax = lasagne.layers.NonlinearityLayer(l_recurrent_out, nonlinearity=lasagne.nonlinearities.softmax)
     # Now, reshape the output back to the input format
     l_out = lasagne.layers.ReshapeLayer(
         l_recurrent_out, (batch_size, seq_length, N_FEAT_DIM))
@@ -42,15 +42,16 @@ def build_network(batch_size, seq_length = MAX_LENGTH):
 def main():
     print "Building network ..."
     l_out = build_network(N_BATCH)
-
+    read_model_data(l_out, 'lstm_iter_60000')
     print "Done building network"
 
     target_values = T.tensor3('target_output')
     input_values = T.tensor3('input')
 
     network_output = lasagne.layers.get_output(l_out, input_values)
-    # L2 loss because it's easy to setup. Should really be using cross entropy
-    cost = T.mean((network_output - target_values)**2)
+
+    # categorical crossentropy loss because it's the proper way
+    cost = T.mean(categorical_crossentropy(T.reshape(network_output, (N_BATCH*MAX_LENGTH, N_FEAT_DIM)) , T.reshape(target_values, (N_BATCH*MAX_LENGTH, N_FEAT_DIM))))
     all_params = lasagne.layers.get_all_params(l_out)
     print "Computing updates..."
     updates = lasagne.updates.adagrad(cost, all_params, LEARNING_RATE)
